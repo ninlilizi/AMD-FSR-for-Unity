@@ -17,6 +17,8 @@
 
             #include "UnityCG.cginc"
 
+            uint flipZBuffer;
+
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -29,22 +31,22 @@
                 float4 vertex : SV_POSITION;
             };
 
-            v2f vert (appdata v)
+            v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
-
-#if UNITY_UV_STARTS_AT_TOP
-                //o.uv.y = 1.0 - v.uv.y;
-#endif
+                if (!flipZBuffer)
+                {
+                    o.uv.y = 1.0 - v.uv.y;
+                }
 
                 return o;
             }
 
             sampler2D _CameraDepthTexture;
 
-            float frag (v2f i) : SV_Target
+            float frag(v2f i) : SV_Target
             {
                 return tex2D(_CameraDepthTexture, i.uv).r;
             }

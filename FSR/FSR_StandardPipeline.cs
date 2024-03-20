@@ -81,6 +81,9 @@ namespace NKLI
         [Tooltip("Enable this to support post-effects dependant on the deferred and depth buffers")]
         public bool CopyRenderBuffers = false;
 
+        [Tooltip("Flips the depth buffer on copy")]
+        public bool FlipDepthBuffer = false;
+
         [SerializeField] public enum TransferMode
         {
             Assign,
@@ -422,7 +425,11 @@ namespace NKLI
             RenderTextureFormat format = attached_camera.allowHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
 
             // Descriptor
+#if UNITY_2019_OR_NEWER
             RenderTextureDescriptor rtDesc = new RenderTextureDescriptor((int)(attached_camera.pixelWidth * render_scale), (int)(attached_camera.pixelHeight * render_scale), format, 32, 1)
+#else
+            RenderTextureDescriptor rtDesc = new RenderTextureDescriptor((int)(attached_camera.pixelWidth * render_scale), (int)(attached_camera.pixelHeight * render_scale), format, 32)
+#endif
             {
                 dimension = TextureDimension.Tex2D,
                 enableRandomWrite = true,
@@ -551,6 +558,7 @@ namespace NKLI
                 // Depth
                 if (((int)render_camera.depthTextureMode & 1) == 1)
                 {
+                    render_camera_buffer_copies.SetGlobalInt("flipZBuffer", FlipDepthBuffer ? 1 : 0);
                     render_camera_buffer_copies.Blit(null, RT_FSR_RenderTarget_Depth, material_BlitDepth); // Breaks randomly when copied from the compute
                 }
 
@@ -638,7 +646,7 @@ namespace NKLI
                 if (((int)render_camera.depthTextureMode & 1) == 1)
                 {
                     attached_camera_buffer_copies_Depth.SetGlobalTexture("_CameraDepthTexture", RT_FSR_RenderTarget_Depth);
-                    if (transferMode_Depth == TransferMode.Copy) {attached_camera_buffer_copies_gBufffers.Blit(RT_FSR_RenderTarget_Depth, BuiltinRenderTextureType.ResolvedDepth);}
+                    if (transferMode_Depth == TransferMode.Copy) attached_camera_buffer_copies_gBufffers.Blit(RT_FSR_RenderTarget_Depth, BuiltinRenderTextureType.ResolvedDepth);
                 }
 
                 // DepthNormals
@@ -991,7 +999,7 @@ namespace NKLI
         }
 
 
-        #region ExecutionStack
+#region ExecutionStack
         /// <summary>
         /// Execution stack for batching functions, used to avoid conditionals in the render loop
         /// </summary>
@@ -1026,6 +1034,6 @@ namespace NKLI
         {
             executionStack.Add(action);
         }
-        #endregion
+#endregion
     }
 }
